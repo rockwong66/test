@@ -45,4 +45,10 @@ git commit -am "   "  # "-am": add 所有改变 并直接 commit
 git checkout master   git merge other # 切换合并分支
 
 git merge --no-ff -m "keep merge info" other       # 保留 merge 信息
-       
+git log --oneline --graph输出查看
+
+两个版本同时在修改  合并会有冲突
+手动更改再合并
+
+rebase合并会把共享的别人commit同时更改，注意使用 
+reflog可以恢复
