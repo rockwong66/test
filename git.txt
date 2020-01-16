@@ -15,6 +15,34 @@ git restore 1.py取消检测到状态改变有修改
 "git add" and/or "git commit -a"不把改变进行提交
 
 git log查看修改记录
-git diff 查看修改的不同  -删除+增加
-a=1
-b=1
+git diff （未添加）查看修改的不同  -删除+增加 --cached(已添加无+-)
+diff +HEAD(有+无修改)
+
+git commit --amend --no-edit 把新的改动合并到上一个已提交的改动
+2.py是1.py复制+改动
+
+git status -s绿色是已add
+git reset 1.py返回未add时（reset针对整个版本库）
+
+git reset --hard HEAD查看HEAD在哪
+git reset --hard HEAD^   或    git reset --hard c6762a1  回到前一个指定某个
+
+git reflog查看删除的commit  
+重新git reset --hard c6762a1  回到前第一个即可
+
+针对特定文件回到某个时刻HEAD用checkout
+git checkout c6762a1 -- 1.py   注意源文件内容会改变
+
+master 主线为最终版围绕他可以分出几个分支branch
+		
+git log --oneline --graph查看分支
+git branch other（分支名称）
+git branch查看当前所有支路   *为当前HEAD所在之路
+git checkout other切换HEAD所在分支
+git checkout -b  other创建并切换
+
+git commit -am "   "  # "-am": add 所有改变 并直接 commit
+git checkout master   git merge other # 切换合并分支
+
+git merge --no-ff -m "keep merge info" other       # 保留 merge 信息
+       
