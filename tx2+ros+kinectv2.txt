@@ -1,0 +1,171 @@
+先安装ROS
+wiki.ros.org
+
+安装中文输入法
+https://blog.csdn.net/qq_28767927/article/details/83927941
+
+安装pip和pip3 
+sudo apt-get remove python3-pip
+sudo python3 -m pip install --upgrade --force-reinstall pip
+
+安装torch  两个whl文件 python2-3
+安装torchvision（需要编译十分钟）
+https://devtalk.nvidia.com/default/topic/1049071/jetson-nano/pytorch-for-jetson-nano/
+退出torchvision文件夹才有version查看成功
+
+torchvision  python3 需要PIL模块(<7.0.0)
+https://blog.csdn.net/ternence_hsu/article/details/103821264
+
+TX2外接kinectv2（18.04）USB3.0口
+https://www.ncnynl.com/archives/201706/1780.html（14.04）结合官网（18.04）
+https://github.com/OpenKinect/libfreenect2/blob/master/README.md#linux
+按照官网做必选即可，必须在TX2里无法转移。
+进入libfreenect2/build/bin  sudo./Protonect
+
+TX2+ROS+Kinect v2
+https://www.ncnynl.com/archives/201703/1439.html
+https://blog.csdn.net/boyhoodme/article/details/89059888（辅）
+https://blog.csdn.net/qq_35212636/article/details/103328916(主)
+libjasper-dev无法安装
+https://blog.csdn.net/weixin_41053564/article/details/81254410
+下方评论在etc/apt/sourcrs.list 文件后面添加加国内镜像
+deb http://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ xenial main multiverse restricted universe
+然后sudo apt-get update即可
+
+新建文件夹编译opencv3.2.0,opencv_contrib3.2.0放在opencv3.2.
+然后更改opencv-3.2.0/cmake的FindCUDA.cmake
+（1）find_cuda_helper_libs(nppi)换为
+find_cuda_helper_libs(nppial)
+find_cuda_helper_libs(nppicc)
+find_cuda_helper_libs(nppicom)
+find_cuda_helper_libs(nppidei)
+find_cuda_helper_libs(nppif)
+find_cuda_helper_libs(nppig)
+find_cuda_helper_libs(nppim)
+find_cuda_helper_libs(nppist)
+find_cuda_helper_libs(nppisu)
+find_cuda_helper_libs(nppitc)
+（2）set(CUDA_npp_LIBRARY "${CUDA_nppc_LIBRARY};${CUDA_nppi_LIBRARY};${CUDA_npps_LIBRARY}")
+换为set(CUDA_npp_LIBRARY "${CUDA_nppc_LIBRARY};${CUDA_nppial_LIBRARY};${CUDA_nppicc_LIBRARY};${CUDA_nppicom_LIBRARY};${CUDA_nppidei_LIBRARY};${CUDA_nppif_LIBRARY};${CUDA_nppig_LIBRARY};${CUDA_nppim_LIBRARY};${CUDA_nppist_LIBRARY};${CUDA_nppisu_LIBRARY};${CUDA_nppitc_LIBRARY};${CUDA_npps_LIBRARY}")
+（3）unset(CUDA_nppi_LIBRARY CACHE)换为
+unset(CUDA_nppial_LIBRARY CACHE)
+unset(CUDA_nppicc_LIBRARY CACHE)
+unset(CUDA_nppicom_LIBRARY CACHE)
+unset(CUDA_nppidei_LIBRARY CACHE)
+unset(CUDA_nppif_LIBRARY CACHE)
+unset(CUDA_nppig_LIBRARY CACHE)
+unset(CUDA_nppim_LIBRARY CACHE)
+unset(CUDA_nppist_LIBRARY CACHE)
+unset(CUDA_nppisu_LIBRARY CACHE)
+unset(CUDA_nppitc_LIBRARY CACHE)
+
+OpenCVDetectCUDA.cmake文件
+
+set(__cuda_arch_ptx "")
+if(CUDA_GENERATION STREQUAL "Fermi")
+    set(__cuda_arch_bin "2.0")
+elseif(CUDA_GENERATION STREQUAL "Kepler")
+    set(__cuda_arch_bin "3.0 3.5 3.7")
+换为
+set(__cuda_arch_ptx "")
+if(CUDA_GENERATION STREQUAL "Kepler")
+    set(__cuda_arch_bin "3.0 3.5 3.7")
+elseif(CUDA_GENERATION STREQUAL "Maxwell")
+    set(__cuda_arch_bin "5.0 5.2")
+
+将头文件cuda_fp16.h添加至 opencv3.2.0\modules\cudev\includ\opencv2\cudev\common.hpp中#应该不是设备原有opencv未尝试
+#include <cuda_fp16.h>
+
+cmake -D WITH_CUDA=ON -D CUDA_ARCH_BIN="7.2" -D ENABLE_PRECOMPILED_HEADERS=OFF  -D CUDA_ARCH_PTX="" -D WITH_GSTREAMER=ON -D WITH_LIBV4L=ON -D BUILD_TESTS=OFF -D BUILD_PERF_TESTS=OFF -D BUILD_EXAMPLES=OFF -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D OPENCV_EXTRA_MODULES_PATH=/home/nvidia/myopencv3/opencv-3.2.0/opencv_contrib-3.2.0/modules ..
+
+/home/nvidia/myopencv3/是放opencv3.2.0所建的文件夹
+输出变为cv2.version为3.2.0，原有未测不知是否改变。
+
+make
+sudo make install (权限)
+
+cd /lib/aarch64-linux-gnu
+#原opencv部分.so在/usr/lib/aarch64-linux-gnu
+看下方27%的错误可能是链接到/usr/lib/aarch64-linux-gnu
+[ 27%] Built target kinect2_registration
+Scanning dependencies of target kinect2_calibration
+Scanning dependencies of target kinect2_bridge
+Scanning dependencies of target kinect2_viewer
+Scanning dependencies of target kinect2_bridge_nodelet
+make[2]: *** No rule to make target '/usr/lib/aarch64-linux-gnu/libopencv_objdetect.so.3.2.0', needed by '/home/nvidia/catkin_ws/devel/lib/kinect2_calibration/kinect2_calibration'.  Stop.
+
+注意链接的空格有影响，只要一个空格
+sudo ln -s /usr/local/lib/libopencv_aruco.so.3.2.0 libopencv_aruco.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudaimgproc.so.3.2.0   libopencv_cudaimgproc.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_flann.so.3.2.0    libopencv_flann.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_phase_unwrapping.so.3.2.0  libopencv_phase_unwrapping.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_surface_matching.so.3.2.0 libopencv_surface_matching.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_bgsegm.so.3.2.0  libopencv_bgsegm.so.3.2.0 
+
+sudo ln -s /usr/local/lib/libopencv_cudalegacy.so.3.2.0  libopencv_cudalegacy.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_freetype.so.3.2.0  libopencv_freetype.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_photo.so.3.2.0  libopencv_photo.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_text.so.3.2.0 libopencv_text.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_bioinspired.so.3.2.0  libopencv_bioinspired.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudaobjdetect.so.3.2.0  libopencv_cudaobjdetect.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_fuzzy.so.3.2.0      libopencv_fuzzy.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_plot.so.3.2.0     libopencv_plot.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_videoio.so.3.2.0 libopencv_videoio.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_calib3d.so.3.2.0   libopencv_calib3d.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudaoptflow.so.3.2.0    libopencv_cudaoptflow.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_hdf.so.3.2.0     libopencv_hdf.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_reg.so.3.2.0    libopencv_reg.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_video.so.3.2.0  libopencv_video.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_ccalib.so.3.2.0   libopencv_ccalib.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudastereo.so.3.2.0   libopencv_cudastereo.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_highgui.so.3.2.0      libopencv_highgui.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_rgbd.so.3.2.0      libopencv_rgbd.so.3.2.0 
+sudo ln -s /usr/local/lib/libopencv_videostab.so.3.2.0   libopencv_videostab.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_core.so.3.2.0    libopencv_core.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudawarping.so.3.2.0  libopencv_cudawarping.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_imgcodecs.so.3.2.0   libopencv_imgcodecs.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_saliency.so.3.2.0    libopencv_saliency.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_viz.so.3.2.0   libopencv_viz.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudaarithm.so.3.2.0   libopencv_cudaarithm.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudev.so.3.2.0    libopencv_cudev.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_imgproc.so.3.2.0   libopencv_imgproc.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_shape.so.3.2.0    libopencv_shape.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_xfeatures2d.so.3.2.0  libopencv_xfeatures2d.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudabgsegm.so.3.2.0   libopencv_cudabgsegm.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_datasets.so.3.2.0     libopencv_datasets.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_line_descriptor.so.3.2.0   libopencv_line_descriptor.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_stereo.so.3.2.0      libopencv_stereo.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_ximgproc.so.3.2.0    libopencv_ximgproc.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudacodec.so.3.2.0    libopencv_cudacodec.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_dpm.so.3.2.0      libopencv_dpm.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_ml.so.3.2.0     libopencv_ml.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_stitching.so.3.2.0  libopencv_stitching.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_xobjdetect.so.3.2.0 libopencv_xobjdetect.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudafeatures2d.so.3.2.0  libopencv_cudafeatures2d.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_face.so.3.2.0   libopencv_face.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_objdetect.so.3.2.0    libopencv_objdetect.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_structured_light.so.3.2.0  libopencv_structured_light.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_xphoto.so.3.2.0 libopencv_xphoto.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_cudafilters.so.3.2.0    libopencv_cudafilters.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_features2d.so.3.2.0    libopencv_features2d.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_optflow.so.3.2.0    libopencv_optflow.so.3.2.0
+sudo ln -s /usr/local/lib/libopencv_superres.so.3.2.0     libopencv_superres.so.3.2.0
+
+cd ~/catkin_ws
+catkin_make -DCMAKE_BUILD_TYPE="Release"
+出错：找不到opencv路径不匹配cv_bridge？
+CMake Error at /opt/ros/melodic/share/cv_bridge/cmake/cv_bridgeConfig.cmake:113 (message):
+  Project 'cv_bridge' specifies '/usr/include/opencv' as an include dir,
+  which is not found.
+把编译的opencv3.2.0链接到出错路径
+sudo ln -s  ~/myopencv/opencv-3.2.0  /usr/include/opencv
+成功
+https://www.cnblogs.com/bigzhao/p/6198073.html
+https://blog.csdn.net/lwq123free/article/details/91490879
+http://www.pianshen.com/article/3247367200/
+
+启动没问题先用libfreenect测试设备启动正常
+剩余显示启动openni2失败，参考
+https://www.jetsonhacks.com/2014/08/28/building-openni2-structure-sensor/
+
+
