@@ -1,0 +1,20 @@
+Git 是一个分布式版本控制系统. 
+
+cd 到管理目录
+git config --global user.name "White Youth"
+git config --global user.email "1341035127@qq.com"
+
+git init 
+
+exolorer .git  touch 1.py  rm -rf 1.py
+
+git add 1.py  git rm --cached 1.py   git status改变添加状态
+
+git restore --staged 1.py取消准备提交状态
+git restore 1.py取消检测到状态改变有修改
+"git add" and/or "git commit -a"不把改变进行提交
+
+git log查看修改记录
+git diff 查看修改的不同  -删除+增加
+a=1
+b=1
